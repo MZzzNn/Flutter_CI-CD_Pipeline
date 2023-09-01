@@ -1,0 +1,177 @@
+name: CI/CD Build APK and Upload to Drive and Send Link to Telegram Channel and Send to Gmail Account
+
+on:
+  push:
+    branches:
+      - master
+      - test
+
+jobs:
+  Build_Android_Apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Get Branch Name
+        id: branch_name
+        run: echo "::set-output name=branch_name::$(echo ${GITHUB_REF#refs/heads/})"
+
+
+      - name: Get Project Name
+        id: project_name
+        run: echo "::set-output name=project_name::$(echo ${GITHUB_REPOSITORY#*/})"
+
+
+      - name: Get Commit Author
+        id: commit_author
+        run: echo "::set-output name=commit_author::$(git log -1 --pretty=%an)"
+
+
+      - name: Get Commit Author Email
+        id: commit_author_email
+        run: echo "::set-output name=commit_author_email::$(git log -1 --pretty=%ae)"
+
+
+      - name: Get Commit Author Date
+        id: date_time
+        run: echo "::set-output name=date_time::$(git log -1 --pretty=%cd --date=format:'%B %d, %Y %I:%M %p')"
+
+
+      - name: Echo All Outputs
+        run: |
+          echo "Branch Name: ${{ steps.branch_name.outputs.branch_name }}"
+          echo "Project Name: ${{ steps.project_name.outputs.project_name }}"
+          echo "Commit Author: ${{ steps.commit_author.outputs.commit_author }}"
+          echo "Commit Author Email: ${{ steps.commit_author_email.outputs.commit_author_email }}"
+          echo "Date Time: ${{ steps.date_time.outputs.date_time }}"
+
+#  ****************************************************************************************************************
+#  *****************************  Set up Flutter and Build APK  ***************************************************
+
+
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.13.0
+          channel: 'stable'
+
+
+      - name: Clean Build Folder
+        run: flutter clean
+
+
+      - name: Get Packages Dependencies
+        run: flutter pub get
+
+
+      - name: Build APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+
+#   ****************************************************************************************************************
+#   *****************************  Get Drive Folder ID and Upload to Google Drive  *********************************
+
+      - name: Get Folder ID
+        uses: haya14busa/action-cond@v1
+        id: folder_id
+        with:
+          cond: ${{ steps.branch_name.outputs.branch_name == 'master' }}
+          if_true:  ${{ secrets.MASTER_FOLDER_ID }}
+          if_false: ${{ secrets.TEST_FOLDER_ID }}
+
+
+      - name: Archive Files
+        run: |
+          sudo apt-get update
+          sudo apt-get install zip
+          zip -r archive.zip *
+
+
+      - name: Upload to Google Drive
+        uses: adityak74/google-drive-upload-git-action@main
+        with:
+          credentials: "${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}"
+          filename: "build/app/outputs/flutter-apk/app-release.apk"
+          folderId: ${{ steps.folder_id.outputs.value }}
+          name: ${{ steps.branch_name.outputs.branch_name }}_apk_${{ steps.date_time.outputs.date_time }}.apk
+          overwrite: "true"
+          mimeType: "application/vnd.android.package-archive"
+
+
+
+#   *****************************************************************************************************************
+#   ************************************** Send Link to Telegram Channel  *******************************************
+
+      - name: Notify Telegram Channel
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHANNEL_ID }},${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            🚀 *New APK Build Uploaded* 🚀
+
+            🔔 *Project:* `${{ steps.project_name.outputs.project_name }}`
+
+            🤖 *Branch:* `${{ steps.branch_name.outputs.branch_name }}`
+
+            👤 *Author:* `${{ steps.commit_author.outputs.commit_author }}`
+
+            📩 *Email:* `${{ steps.commit_author_email.outputs.commit_author_email }}`
+
+            📅  `${{ steps.date_time.outputs.date_time }}`
+
+            〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️
+
+
+            🔗 Download: [Click Here](https://drive.google.com/drive/folders/${{ steps.folder_id.outputs.value }})
+
+
+            See you soon 😊
+
+
+          
+#   *****************************************************************************************************************
+#   ************************************** Send To Gmail Account ***************************************************
+
+      - name: Notify Gmail
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_PASSWORD }}
+          from: ${{ steps.commit_author.outputs.commit_author }}
+          to: mazenn770@gmail.com
+          subject: "CI 👉🏻 New APK Build Uploaded"
+          convert_markdown: true
+          body: |
+            Dear Sir,
+  
+            I hope this email finds you well. I am writing to inform you that a new APK build has been uploaded to our Google Drive.
+          
+            We are pleased to share the following details:
+            
+            - Project: ${{ steps.project_name.outputs.project_name }}
+            - Branch: ${{ steps.branch_name.outputs.branch_name }}
+            - Date: ${{ steps.date_time.outputs.date_time }}
+          
+            You can download the APK build by clicking on the following link: https://drive.google.com/drive/folders/${{ steps.folder_id.outputs.value }}
+              
+            Should you have any questions or require further assistance, please do not hesitate to reach out to us. We value your continued support and look forward to serving you.
+              
+            Best regards,
+              
+            ${{ steps.commit_author.outputs.commit_author }}
+            Flutter Developer
+            IX Solutions Company
+            Email: ${{ steps.commit_author_email.outputs.commit_author_email }}
