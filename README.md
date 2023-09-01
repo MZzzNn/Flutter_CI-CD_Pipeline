@@ -25,9 +25,9 @@ To use this CI/CD workflow for your Flutter project, follow these steps:
     - `MASTER_FOLDER_ID`: Google Drive folder ID for the `master` branch.
     - `TEST_FOLDER_ID`: Google Drive folder ID for the `test` branch.
     - `GOOGLE_DRIVE_CREDENTIALS`: Service account credentials JSON for Google Drive access.
-    - `TELEGRAM_CHANNEL_ID`: Telegram channel ID for sending notifications.
-    - `TELEGRAM_TO`: Comma-separated list of Telegram user IDs or usernames to send notifications to.
-    - `TELEGRAM_BOT_TOKEN`: Telegram bot token for sending notifications.
+    - `TELEGRAM_CHANNEL_ID`: Telegram channel ID for sending notifications [get it here](https://t.me/getidsbot).
+    - `TELEGRAM_TO`: Comma-separated list of Telegram user IDs or usernames to send notifications to [get it here](https://t.me/username_to_id_bot).
+    - `TELEGRAM_BOT_TOKEN`: Telegram bot token for sending notifications [get it here](https://t.me/botfather).
     - `GMAIL_USERNAME`: Gmail account username for sending notification emails.
     - `GMAIL_PASSWORD`: Gmail account password or an [app-specific password](https://support.google.com/accounts/answer/185833?hl=en) for sending notification emails.
 3. Customize the email notification's content in the `Notify Gmail` step to match your requirements.
@@ -41,3 +41,8 @@ Feel free to customize and enhance the workflow to suit your specific needs.
 
 - Ensure that you have the necessary permissions and access to the Google Drive folders, Telegram channel, and Gmail account.
 - Make sure to keep your secrets secure and avoid exposing them in public repositories.
+
+## Feedback
+
+- If you have any questions or suggestions, don't hesitate to send me.
+
