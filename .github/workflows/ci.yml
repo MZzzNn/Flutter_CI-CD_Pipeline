@@ -161,7 +161,7 @@ jobs:
         with:
           credentials: "${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}"
           filename: archive.zip
-          folderId: ${{ needs.Get_Info.outputs.folder_id.value }}
+          folderId: ${{ steps.folder_id.outputs.value }}
           name: ${{ needs.Get_Info.outputs.branch_name }}_apk_${{ needs.Get_Info.outputs.date_time }}.apk
           overwrite: "true"
           mimeType: "application/vnd.android.package-archive"
