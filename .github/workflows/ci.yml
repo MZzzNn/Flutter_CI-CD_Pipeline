@@ -12,7 +12,7 @@ on:
 
 jobs:
 
-# TODO: Here You Can Delete Old APK, IPA, AAB, etc...
+  # TODO: Here You Can Delete Old APK, IPA, AAB, etc...
   delete-artifacts:
     runs-on: ubuntu-latest
     steps:
@@ -22,7 +22,7 @@ jobs:
           expire-in: 0days
 
 
-# TODO: Here You Can Get Info About Branch, Project, Commit Author, etc...
+  # TODO: Here You Can Get Info About Branch, Project, Commit Author, etc...
   Get_Info:
     name: Get Info
     runs-on: ubuntu-latest
@@ -74,19 +74,19 @@ jobs:
           echo ${{ steps.commit_author_email.outputs.commit_author_email }}
           echo ${{ steps.date_time.outputs.date_time }}
           echo ${{ steps.date_url.outputs.date_url }}
+  
+  
+  
+  
+  
 
-
-
-
-
-
-# TODO: Here You Can Build APK, IPA, AAB, etc...
+  # TODO: Here You Can Build APK, IPA, AAB, etc...
   Build_Android_Apk:
     name: Build Android APK
     needs: [ Get_Info, delete-artifacts ]
     runs-on: ubuntu-latest
     outputs:
-        build_apk_path: ${{ steps.build_apk_path.outputs.build_apk_path }}
+      build_apk_path: ${{ steps.build_apk_path.outputs.build_apk_path }}
 
     steps:
       - name: Checkout Repository
@@ -152,15 +152,15 @@ jobs:
       - name: Archive Files
         run: |
           sudo apt-get update
-          sudo apt-get install zip
-          zip -r archive.zip *
-
+          sudo apt-get install zip unzip
+          zip -r archive.zip build/app/outputs/apk/release/app-release.apk
+          
 
       - name: Upload to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
         with:
           credentials: "${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}"
-          filename:  ${{ needs.Upload_Apk.outputs.build_apk_path }}
+          filename: archive.zip
           folderId: ${{ needs.Get_Info.outputs.folder_id.value }}
           name: ${{ needs.Get_Info.outputs.branch_name }}_apk_${{ needs.Get_Info.outputs.date_time }}.apk
           overwrite: "true"
@@ -189,8 +189,8 @@ jobs:
   
   
   
-
-
+  
+  
 
   # Todo:: Here You Can Notify Users With Telegram Channel, Email, whatsapp, etc...
   Notify_User:
