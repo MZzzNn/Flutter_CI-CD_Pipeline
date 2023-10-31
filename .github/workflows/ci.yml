@@ -12,6 +12,7 @@ on:
 
 jobs:
 
+# TODO: Here You Can Delete Old APK, IPA, AAB, etc...
   delete-artifacts:
     runs-on: ubuntu-latest
     steps:
@@ -21,6 +22,7 @@ jobs:
           expire-in: 0days
 
 
+# TODO: Here You Can Get Info About Branch, Project, Commit Author, etc...
   Get_Info:
     name: Get Info
     runs-on: ubuntu-latest
@@ -77,10 +79,14 @@ jobs:
 
 
 
+
+# TODO: Here You Can Build APK, IPA, AAB, etc...
   Build_Android_Apk:
     name: Build Android APK
     needs: [ Get_Info, delete-artifacts ]
     runs-on: ubuntu-latest
+    outputs:
+        build_apk_path: ${{ steps.build_apk_path.outputs.build_apk_path }}
 
     steps:
       - name: Checkout Repository
@@ -111,11 +117,15 @@ jobs:
       - name: Build APK
         run: flutter build apk --release --no-tree-shake-icons
 
+      - name: Build Apk Path
+        id: build_apk_path
+        run: echo build_apk_path=$(find . -name "*.apk" | head -1) >> $GITHUB_OUTPUT
+
+
 
   # TODO: Here You Can Upload APK to Google drive, Transfer, Firebase App Distribution, TestFlight, etc...
-
   Upload_Apk:
-    name: Upload APK
+    name: Upload APK to Google Drive and Transfer.sh
     needs: [ Get_Info, delete-artifacts , Build_Android_Apk ]
     runs-on: ubuntu-latest
     outputs:
@@ -180,10 +190,11 @@ jobs:
   
   
 
-  # Todo:: Here You Can Notify Users With Telegram Channel, Email, whatsapp, etc...
 
+
+  # Todo:: Here You Can Notify Users With Telegram Channel, Email, whatsapp, etc...
   Notify_User:
-    name: Upload APK
+    name: Notify User With Telegram Channel, Email
     needs: [ Get_Info, delete-artifacts , Build_Android_Apk , Upload_Apk ]
     runs-on: ubuntu-latest
 
