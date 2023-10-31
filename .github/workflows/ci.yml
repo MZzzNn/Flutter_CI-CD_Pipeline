@@ -6,10 +6,31 @@ on:
       - master
       - test
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+
 jobs:
-  Build_Android_Apk:
-    name: Build Android APK
+
+  delete-artifacts:
     runs-on: ubuntu-latest
+    steps:
+      - uses: kolpav/purge-artifacts-action@v1
+        with:
+          token: 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
+          expire-in: 0days
+
+
+  Get_Info:
+    name: Get Info
+    runs-on: ubuntu-latest
+    outputs:
+      branch_name: ${{ steps.branch_name.outputs.branch_name }}
+      project_name: ${{ steps.project_name.outputs.project_name }}
+      commit_author: ${{ steps.commit_author.outputs.commit_author }}
+      commit_author_email: ${{ steps.commit_author_email.outputs.commit_author_email }}
+      date_time: ${{ steps.date_time.outputs.date_time }}
+      date_url: ${{ steps.date_url.outputs.date_url }}
 
     steps:
       - name: Checkout Repository
@@ -17,39 +38,53 @@ jobs:
 
       - name: Get Branch Name
         id: branch_name
-        run: echo "::set-output name=branch_name::$(echo ${GITHUB_REF#refs/heads/})"
+        run: echo branch_name=${GITHUB_REF#refs/heads/} >> $GITHUB_OUTPUT
 
 
       - name: Get Project Name
         id: project_name
-        run: echo "::set-output name=project_name::$(echo ${GITHUB_REPOSITORY#*/})"
+        run: echo project_name=${GITHUB_REPOSITORY#*/} >> $GITHUB_OUTPUT
 
 
       - name: Get Commit Author
         id: commit_author
-        run: echo "::set-output name=commit_author::$(git log -1 --pretty=%an)"
+        run: echo commit_author=$(git log -1 --pretty=%an) >> $GITHUB_OUTPUT
 
 
       - name: Get Commit Author Email
         id: commit_author_email
-        run: echo "::set-output name=commit_author_email::$(git log -1 --pretty=%ae)"
+        run: echo commit_author_email=$(git log -1 --pretty=%ae) >> $GITHUB_OUTPUT
 
 
-      - name: Get Commit Author Date
+      - name: Get Commit Formatted Date
         id: date_time
-        run: echo "::set-output name=date_time::$(git log -1 --pretty=%cd --date=format:'%B %d, %Y %I:%M %p')"
+        run: echo date_time=$(git log -1 --pretty=%cd --date=format:'%B %d, %Y %I:%M %p') >> $GITHUB_OUTPUT
 
+      - name: Get Commit Date For Url
+        id: date_url
+        run: echo date_url=$(git log -1 --pretty=%cd --date=format:'%Y-%m-%d') >> $GITHUB_OUTPUT
 
-      - name: Echo All Outputs
+      - name: echo
         run: |
-          echo "Branch Name: ${{ steps.branch_name.outputs.branch_name }}"
-          echo "Project Name: ${{ steps.project_name.outputs.project_name }}"
-          echo "Commit Author: ${{ steps.commit_author.outputs.commit_author }}"
-          echo "Commit Author Email: ${{ steps.commit_author_email.outputs.commit_author_email }}"
-          echo "Date Time: ${{ steps.date_time.outputs.date_time }}"
+          echo ${{ steps.branch_name.outputs.branch_name }}
+          echo ${{ steps.project_name.outputs.project_name }}
+          echo ${{ steps.commit_author.outputs.commit_author }}
+          echo ${{ steps.commit_author_email.outputs.commit_author_email }}
+          echo ${{ steps.date_time.outputs.date_time }}
+          echo ${{ steps.date_url.outputs.date_url }}
 
-#  ****************************************************************************************************************
-#  *****************************  Set up Flutter and Build APK  ***************************************************
+
+
+
+
+  Build_Android_Apk:
+    name: Build Android APK
+    needs: [ Get_Info, delete-artifacts ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
 
       - name: Set up Java
@@ -77,15 +112,30 @@ jobs:
         run: flutter build apk --release --no-tree-shake-icons
 
 
-#   ****************************************************************************************************************
-#   *****************************  Get Drive Folder ID and Upload to Google Drive  *********************************
+  # TODO: Here You Can Upload APK to Google drive, Transfer, Firebase App Distribution, TestFlight, etc...
+
+  Upload_Apk:
+    name: Upload APK
+    needs: [ Get_Info, delete-artifacts , Build_Android_Apk ]
+    runs-on: ubuntu-latest
+    outputs:
+      folder_id: ${{ steps.folder_id.outputs.value }}
+      upload_url: ${{ steps.upload_artifact.outputs.upload_url }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+
+      #   ****************************************************************************************************************
+      #   *****************************  Get Drive Folder ID and Upload to Google Drive  *********************************
 
       - name: Get Folder ID
         uses: haya14busa/action-cond@v1
         id: folder_id
         with:
           cond: ${{ steps.branch_name.outputs.branch_name == 'master' }}
-          if_true:  ${{ secrets.MASTER_FOLDER_ID }}
+          if_true: ${{ secrets.MASTER_FOLDER_ID }}
           if_false: ${{ secrets.TEST_FOLDER_ID }}
 
 
@@ -101,15 +151,50 @@ jobs:
         with:
           credentials: "${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}"
           filename: "build/app/outputs/flutter-apk/app-release.apk"
-          folderId: ${{ steps.folder_id.outputs.value }}
-          name: ${{ steps.branch_name.outputs.branch_name }}_apk_${{ steps.date_time.outputs.date_time }}.apk
+          folderId: ${{ needs.Get_Info.outputs.folder_id.value }}
+          name: ${{ needs.Get_Info.outputs.branch_name }}_apk_${{ needs.Get_Info.outputs.date_time }}.apk
           overwrite: "true"
           mimeType: "application/vnd.android.package-archive"
 
 
+      #   ******************************************************************************************************************
+      #   **************************************** Upload to Transfer.sh  **************************************************
 
-#   *****************************************************************************************************************
-#   ************************************** Send Link to Telegram Channel  *******************************************
+      - name: Upload To Transfer.sh
+        id: upload_apk
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-release.apk
+          path: build/app/outputs/apk/release/app-release.apk
+
+      - name: Upload Artifact to Transfer.sh
+        id: upload_artifact
+        run: |
+          UPLOAD_URL=$(curl --upload-file build/app/outputs/flutter-apk/app-release.apk https://transfer.sh/${{ needs.Get_Info.outputs.date_url }}-app-release.apk)
+          echo upload_url=${UPLOAD_URL} >> $GITHUB_OUTPUT
+
+      - name: echo
+        run: |
+          echo ${{ steps.upload_artifact.outputs.upload_url }}
+  
+  
+  
+
+  # Todo:: Here You Can Notify Users With Telegram Channel, Email, whatsapp, etc...
+
+  Notify_User:
+    name: Upload APK
+    needs: [ Get_Info, delete-artifacts , Build_Android_Apk , Upload_Apk ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+
+      #   *****************************************************************************************************************
+      #   ************************************** Send Link to Telegram Channel  *******************************************
+
 
       - name: Notify Telegram Channel
         uses: appleboy/telegram-action@master
@@ -120,28 +205,27 @@ jobs:
           message: |
             🚀 *New APK Build Uploaded* 🚀
 
-            🔔 *Project:* `${{ steps.project_name.outputs.project_name }}`
+            🔔 *Project:* `${{ needs.Get_Info.outputs.project_name }}`
 
-            🤖 *Branch:* `${{ steps.branch_name.outputs.branch_name }}`
+            🤖 *Branch:* `${{ needs.Get_Info.outputs.branch_name }}`
 
-            👤 *Author:* `${{ steps.commit_author.outputs.commit_author }}`
+            👤 *Author:* `${{ needs.Get_Info.outputs.commit_author }}`
 
-            📩 *Email:* `${{ steps.commit_author_email.outputs.commit_author_email }}`
+            📩 *Email:* `${{ needs.Get_Info.outputs.commit_author_email }}`
 
-            📅  `${{ steps.date_time.outputs.date_time }}`
+            📅  `${{ needs.Get_Info.outputs.date_time }}`
 
             〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️
 
 
-            🔗 Download: [Click Here](https://drive.google.com/drive/folders/${{ steps.folder_id.outputs.value }})
-
+            🔗 Google Drive Download Url: [Click Here](https://drive.google.com/drive/folders/${{needs.Get_Info.outputs.folder_id.value}})
+            🔗 Transfer.sh Download Url: [Click Here](${{ needs.Upload_Apk.outputs.upload_url }})
 
             See you soon 😊
+      
 
-
-          
-#   *****************************************************************************************************************
-#   ************************************** Send To Gmail Account ***************************************************
+      #   *****************************************************************************************************************
+      #   ************************************** Send To Gmail Account ***************************************************
 
       - name: Notify Gmail
         uses: dawidd6/action-send-mail@v3
@@ -150,28 +234,42 @@ jobs:
           server_port: 465
           username: ${{ secrets.GMAIL_USERNAME }}
           password: ${{ secrets.GMAIL_PASSWORD }}
-          from: ${{ steps.commit_author.outputs.commit_author }}
+          from: ${{ needs.Get_Info.outputs.commit_author_email }}
           to: mazenn770@gmail.com
           subject: "CI 👉🏻 New APK Build Uploaded"
           convert_markdown: true
           body: |
             Dear Sir,
-  
-            I hope this email finds you well. I am writing to inform you that a new APK build has been uploaded to our Google Drive.
-          
+
+            I hope this email finds you well. I just wanted to let you know that a new APK build has been uploaded to our Google Drive.
+
             We are pleased to share the following details:
-            
-            - Project: ${{ steps.project_name.outputs.project_name }}
-            - Branch: ${{ steps.branch_name.outputs.branch_name }}
-            - Date: ${{ steps.date_time.outputs.date_time }}
-          
-            You can download the APK build by clicking on the following link: https://drive.google.com/drive/folders/${{ steps.folder_id.outputs.value }}
-              
+
+            - Project: ${{ needs.Get_Info.outputs.project_name }}
+            - Branch: ${{ needs.Get_Info.outputs.branch_name }}
+            - Date: ${{ needs.Get_Info.outputs.date_time }}
+
+            You can download the APK build by clicking on the following link: 
+             - 🔗 Google Drive Download Url: [Click Here](https://drive.google.com/drive/folders/${{needs.Get_Info.outputs.folder_id.value}})
+             - 🔗 Transfer.sh Download Url: [Click Here](${{ needs.Upload_Apk.outputs.upload_url }})
+
             Should you have any questions or require further assistance, please do not hesitate to reach out to us. We value your continued support and look forward to serving you.
-              
+
             Best regards,
-              
-            ${{ steps.commit_author.outputs.commit_author }}
+
+            ${{ needs.Get_Info.outputs.commit_author }}
             Flutter Developer
             IX Solutions Company
-            Email: ${{ steps.commit_author_email.outputs.commit_author_email }}
+            Email: ${{ needs.Get_Info.outputs.commit_author_email }}
+        
+
+        #   *****************************************************************************************************************
+        #   ************************************** Send To Whatsapp Account ***************************************************
+        #      - name: Notify Whatsapp
+        #        uses: khaled-ibtikar/whatsapp-push-notify-action@master
+        #        id: whatsapp-notify
+        #        env:
+        #          account_sid: ${{ secrets.TWILIO_ACCOUNT_SID }}
+        #          auth_token: ${{ secrets.TWILIO_AUTH_TOKEN }}
+        #          to_whatsapp_no: ${{ secrets.WHATSAPP_TO_NUMBER }}
+        #          message: "CI 👉🏻 Your message here..."
