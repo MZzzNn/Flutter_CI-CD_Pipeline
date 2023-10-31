@@ -153,7 +153,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install zip unzip
-          zip -r archive.zip build/app/outputs/apk/release/app-release.apk
+          zip -r archive.zip . -i build/app/outputs/apk/release/app-release.apk
           
 
       - name: Upload to Google Drive
