@@ -135,8 +135,8 @@ jobs:
     needs: [ Get_Info, delete-artifacts , Build_Android_Apk ]
     runs-on: ubuntu-latest
     outputs:
-      drive_url: https://drive.google.com/drive/folders/${{ steps.folder_id.outputs.value }}
-      transfer_url: ${{ steps.upload_artifact.outputs.upload_url }}
+      drive_url: ${{ steps.upload_urls.outputs.drive_url }}
+      transfer_url: ${{ steps.upload_urls.outputs.transfer_url }}
 
     steps:
       #   ****************************************************************************************************************
@@ -183,12 +183,14 @@ jobs:
         id: upload_artifact
         run: |
           UPLOAD_URL=$(curl --upload-file build/app/outputs/flutter-apk/app-release.apk https://transfer.sh/${{ needs.Get_Info.outputs.date_url }}-app-release.apk)
-          echo "::set-output name=upload_url::$UPLOAD_URL"
+          echo upload_url=$UPLOAD_URL >> $GITHUB_OUTPUT
 
-      - name: echo Upload Url
+
+      - name: echo Upload Urls
+        id: upload_urls
         run: |
-          echo ${{ steps.upload_artifact.outputs.upload_url }}
-          echo https://drive.google.com/drive/folders/${{ steps.folder_id.outputs.value }}
+          echo transfer_url=${{ steps.upload_artifact.outputs.upload_url }} >> $GITHUB_OUTPUT
+          echo drive_url=https://drive.google.com/drive/folders/${{ steps.folder_id.outputs.value }} >> $GITHUB_OUTPUT
   
   
 
