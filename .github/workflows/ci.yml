@@ -141,6 +141,8 @@ jobs:
     steps:
       #   ****************************************************************************************************************
       #   *****************************  Get Drive Folder ID and Upload to Google Drive  *********************************
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
       - name: Get Folder ID
         uses: haya14busa/action-cond@v1
