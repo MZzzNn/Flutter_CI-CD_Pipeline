@@ -200,6 +200,8 @@ jobs:
         run: |
           echo transfer_url=${{ steps.upload_artifact.outputs.upload_url }} >> $GITHUB_OUTPUT
           echo drive_url=${{ steps.upload-to-drive.outputs.url }} >> $GITHUB_OUTPUT
+          echo ${{ steps.upload_artifact.outputs.upload_url }}
+          echo ${{ steps.upload-to-drive.outputs.url }}
   
   
 
