@@ -155,7 +155,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install zip
-          zip -r app-release.zip build/app/outputs/flutter-apk/app-release.apk
+          zip -r app-release.zip . -i build/app/outputs/flutter-apk/app-release.apk
 
 
       - name: Upload to Google Drive
