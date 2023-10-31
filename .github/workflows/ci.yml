@@ -151,18 +151,23 @@ jobs:
           if_false: ${{ secrets.TEST_FOLDER_ID }}
 
 
-      - name: Archive Files
-        run: |
-          sudo apt-get update
-          sudo apt-get install zip
-          zip -r app-release.zip . -i build/app/outputs/flutter-apk/app-release.apk
+#      - name: Archive Files
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install zip
+#          zip -r app-release.zip . -i build/app/outputs/flutter-apk/app-release.apk
 
+      - name: Download APK Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
         with:
           credentials: "${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}"
-          filename: "app-release.zip"
+          filename: "build/app/outputs/flutter-apk/app-release.apk"
           folderId: ${{ steps.folder_id.outputs.value }}
           name: ${{ needs.Get_Info.outputs.branch_name }}_apk_${{ needs.Get_Info.outputs.date_time }}.apk
           overwrite: "true"
