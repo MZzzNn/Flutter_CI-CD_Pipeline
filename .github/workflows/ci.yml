@@ -121,6 +121,12 @@ jobs:
         id: build_apk_path
         run: echo build_apk_path=$(find . -name "*.apk" | head -1) >> $GITHUB_OUTPUT
 
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+
 
 
   # TODO: Here You Can Upload APK to Google drive, Transfer, Firebase App Distribution, TestFlight, etc...
@@ -129,14 +135,10 @@ jobs:
     needs: [ Get_Info, delete-artifacts , Build_Android_Apk ]
     runs-on: ubuntu-latest
     outputs:
-      folder_id: ${{ steps.folder_id.outputs.value }}
-      upload_url: ${{ steps.upload_artifact.outputs.upload_url }}
+      drive_url: https://drive.google.com/drive/folders/${{ steps.folder_id.outputs.value }}
+      transfer_url: ${{ steps.upload_artifact.outputs.upload_url }}
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
-
       #   ****************************************************************************************************************
       #   *****************************  Get Drive Folder ID and Upload to Google Drive  *********************************
 
@@ -152,8 +154,8 @@ jobs:
       - name: Archive Files
         run: |
           sudo apt-get update
-          sudo apt-get install zip unzip
-          zip -r archive.zip . -i build/app/outputs/apk/release/app-release.apk
+          sudo apt-get install zip
+          zip -r archive.zip *
 
 
       - name: Upload to Google Drive
@@ -170,26 +172,17 @@ jobs:
       #   ******************************************************************************************************************
       #   **************************************** Upload to Transfer.sh  **************************************************
 
-#      - name: Upload To Transfer.sh
-#        id: upload_apk
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: app-release.apk
-#          path: build/app/outputs/apk/release/app-release.apk
-#
-#      - name: Upload Artifact to Transfer.sh
-#        id: upload_artifact
-#        run: |
-#            UPLOAD_URL=$(curl --upload-file build/app/outputs/apk/release/app-release.apk https://transfer.sh/${{ needs.Get_Info.outputs.date_url }}-app-release.apk)
-#            echo "::set-output name=upload_url::$UPLOAD_URL"
-#
-#      - name: echo
-#        run: |
-#          echo ${{ steps.upload_artifact.outputs.upload_url }}
-#
-#
-#
-#
+      - name: Upload Artifact to Transfer.sh
+        id: upload_artifact
+        run: |
+          UPLOAD_URL=$(curl --upload-file build/app/outputs/flutter-apk/app-release.apk https://transfer.sh/${{ needs.Get_Info.outputs.date_url }}-app-release.apk)
+          echo upload_url=$UPLOAD_URL >> $GITHUB_OUTPUT
+
+      - name: echo Upload Url
+        run: |
+          echo ${{ steps.upload_artifact.outputs.upload_url }}
+          echo https://drive.google.com/drive/folders/${{ steps.folder_id.outputs.value }}
+  
   
 
   # Todo:: Here You Can Notify Users With Telegram Channel, Email, whatsapp, etc...
@@ -199,9 +192,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
 
       #   *****************************************************************************************************************
       #   ************************************** Send Link to Telegram Channel  *******************************************
@@ -229,8 +219,8 @@ jobs:
             〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️
 
 
-            🔗 Google Drive Download Url: [Click Here](https://drive.google.com/drive/folders/${{needs.Get_Info.outputs.folder_id.value}})
-            🔗 Transfer.sh Download Url: [Click Here](${{ needs.Upload_Apk.outputs.upload_url }})
+            🔗 Google Drive Download Url: [Click Here](${{needs.Upload_Apk.outputs.drive_url}})
+            🔗 Transfer.sh Download Url: [Click Here](${{ needs.Upload_Apk.outputs.transfer_url }})
 
             See you soon 😊
       
@@ -261,8 +251,8 @@ jobs:
             - Date: ${{ needs.Get_Info.outputs.date_time }}
 
             You can download the APK build by clicking on the following link: 
-             - 🔗 Google Drive Download Url: [Click Here](https://drive.google.com/drive/folders/${{needs.Get_Info.outputs.folder_id.value}})
-             - 🔗 Transfer.sh Download Url: [Click Here](${{ needs.Upload_Apk.outputs.upload_url }})
+             - 🔗 Google Drive Download Url: [Click Here]( ${{needs.Upload_Apk.outputs.drive_url}})
+             - 🔗 Transfer.sh Download Url: [Click Here]( ${{needs.Upload_Apk.outputs.transfer_url}})
 
             Should you have any questions or require further assistance, please do not hesitate to reach out to us. We value your continued support and look forward to serving you.
 
