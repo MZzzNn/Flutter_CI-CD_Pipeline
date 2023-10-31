@@ -150,24 +150,24 @@ jobs:
           if_true: ${{ secrets.MASTER_FOLDER_ID }}
           if_false: ${{ secrets.TEST_FOLDER_ID }}
 
-
-#      - name: Archive Files
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install zip
-#          zip -r app-release.zip . -i build/app/outputs/flutter-apk/app-release.apk
-
       - name: Download APK Artifact
         uses: actions/download-artifact@v2
+        id: artifact_id
         with:
           name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Archive Files
+        run: |
+          sudo apt-get update
+          sudo apt-get install zip
+          zip -r app-release.zip build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
         with:
           credentials: "${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}"
-          filename: "build/app/outputs/flutter-apk/app-release.apk"
+          filename: "app-release.zip"
           folderId: ${{ steps.folder_id.outputs.value }}
           name: ${{ needs.Get_Info.outputs.branch_name }}_apk_${{ needs.Get_Info.outputs.date_time }}.apk
           overwrite: "true"
@@ -181,7 +181,7 @@ jobs:
         id: upload_artifact
         run: |
           UPLOAD_URL=$(curl --upload-file build/app/outputs/flutter-apk/app-release.apk https://transfer.sh/${{ needs.Get_Info.outputs.date_url }}-app-release.apk)
-          echo upload_url=$UPLOAD_URL >> $GITHUB_OUTPUT
+          echo "::set-output name=upload_url::$UPLOAD_URL"
 
       - name: echo Upload Url
         run: |
@@ -219,13 +219,13 @@ jobs:
 
             📩 *Email:* `${{ needs.Get_Info.outputs.commit_author_email }}`
 
-            📅  `${{ needs.Get_Info.outputs.date_time }}`
+            📅 `${{ needs.Get_Info.outputs.date_time }}`
 
             〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️〰️
 
 
-            🔗 Google Drive Download Url: [Click Here](${{needs.Upload_Apk.outputs.drive_url}})
-            🔗 Transfer.sh Download Url: [Click Here](${{ needs.Upload_Apk.outputs.transfer_url }})
+            🔗 Google Drive Download Url: [Click Here](${{ needs.Upload_Apk.outputs.drive_url }})
+            🔗 Transfer Download Url: [Click Here](${{ needs.Upload_Apk.outputs.transfer_url }})
 
             See you soon 😊
       
