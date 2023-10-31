@@ -163,21 +163,30 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install zip
-          zip -r app-release.zip build/app/outputs/flutter-apk/app-release.apk
+          zip -r archive.zip * 
 
       - name: Upload to Google Drive
+        id: upload-to-drive
         uses: adityak74/google-drive-upload-git-action@main
         with:
           credentials: "${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}"
-          filename: "app-release.zip"
+          filename: "build/app/outputs/flutter-apk/app-release.apk"
           folderId: ${{ steps.folder_id.outputs.value }}
           name: ${{ needs.Get_Info.outputs.branch_name }}_apk_${{ needs.Get_Info.outputs.date_time }}.apk
           overwrite: "true"
           mimeType: "application/vnd.android.package-archive"
 
 
+
       #   ******************************************************************************************************************
       #   **************************************** Upload to Transfer.sh  **************************************************
+
+      - name: Upload
+        id: upload_apk
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-release.apk
+          path: build/app/outputs/apk/release/app-release.apk
 
       - name: Upload Artifact to Transfer.sh
         id: upload_artifact
@@ -190,7 +199,7 @@ jobs:
         id: upload_urls
         run: |
           echo transfer_url=${{ steps.upload_artifact.outputs.upload_url }} >> $GITHUB_OUTPUT
-          echo drive_url=https://drive.google.com/drive/folders/${{ steps.folder_id.outputs.value }} >> $GITHUB_OUTPUT
+          echo drive_url=${{ steps.upload-to-drive.outputs.url }} >> $GITHUB_OUTPUT
   
   
 
