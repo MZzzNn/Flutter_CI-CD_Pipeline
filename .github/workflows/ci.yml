@@ -155,14 +155,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install zip
-          zip -r archive.zip *
+          zip -r app-release.zip build/app/outputs/flutter-apk/app-release.apk
 
 
       - name: Upload to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
         with:
           credentials: "${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}"
-          filename: archive.zip
+          filename: "app-release.zip"
           folderId: ${{ steps.folder_id.outputs.value }}
           name: ${{ needs.Get_Info.outputs.branch_name }}_apk_${{ needs.Get_Info.outputs.date_time }}.apk
           overwrite: "true"
