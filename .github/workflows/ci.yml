@@ -154,7 +154,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install zip unzip
           zip -r archive.zip . -i build/app/outputs/apk/release/app-release.apk
-          
+
 
       - name: Upload to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
@@ -170,26 +170,26 @@ jobs:
       #   ******************************************************************************************************************
       #   **************************************** Upload to Transfer.sh  **************************************************
 
-      - name: Upload To Transfer.sh
-        id: upload_apk
-        uses: actions/upload-artifact@v2
-        with:
-          name: app-release.apk
-          path: build/app/outputs/apk/release/app-release.apk
-
-      - name: Upload Artifact to Transfer.sh
-        id: upload_artifact
-        run: |
-          UPLOAD_URL=$(curl --upload-file build/app/outputs/flutter-apk/app-release.apk https://transfer.sh/${{ needs.Get_Info.outputs.date_url }}-app-release.apk)
-          echo upload_url=${UPLOAD_URL} >> $GITHUB_OUTPUT
-
-      - name: echo
-        run: |
-          echo ${{ steps.upload_artifact.outputs.upload_url }}
-  
-  
-  
-  
+#      - name: Upload To Transfer.sh
+#        id: upload_apk
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: app-release.apk
+#          path: build/app/outputs/apk/release/app-release.apk
+#
+#      - name: Upload Artifact to Transfer.sh
+#        id: upload_artifact
+#        run: |
+#            UPLOAD_URL=$(curl --upload-file build/app/outputs/apk/release/app-release.apk https://transfer.sh/${{ needs.Get_Info.outputs.date_url }}-app-release.apk)
+#            echo "::set-output name=upload_url::$UPLOAD_URL"
+#
+#      - name: echo
+#        run: |
+#          echo ${{ steps.upload_artifact.outputs.upload_url }}
+#
+#
+#
+#
   
 
   # Todo:: Here You Can Notify Users With Telegram Channel, Email, whatsapp, etc...
