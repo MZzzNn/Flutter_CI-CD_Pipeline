@@ -125,7 +125,7 @@ jobs:
 
   # TODO: Here You Can Upload APK to Google drive, Transfer, Firebase App Distribution, TestFlight, etc...
   Upload_Apk:
-    name: Upload APK to Google Drive and Transfer.sh
+    name: Upload APK
     needs: [ Get_Info, delete-artifacts , Build_Android_Apk ]
     runs-on: ubuntu-latest
     outputs:
@@ -160,7 +160,7 @@ jobs:
         uses: adityak74/google-drive-upload-git-action@main
         with:
           credentials: "${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}"
-          filename: "build/app/outputs/flutter-apk/app-release.apk"
+          filename:  ${{ needs.Upload_Apk.outputs.build_apk_path }}
           folderId: ${{ needs.Get_Info.outputs.folder_id.value }}
           name: ${{ needs.Get_Info.outputs.branch_name }}_apk_${{ needs.Get_Info.outputs.date_time }}.apk
           overwrite: "true"
@@ -194,7 +194,7 @@ jobs:
 
   # Todo:: Here You Can Notify Users With Telegram Channel, Email, whatsapp, etc...
   Notify_User:
-    name: Notify User With Telegram Channel, Email
+    name: Notify User
     needs: [ Get_Info, delete-artifacts , Build_Android_Apk , Upload_Apk ]
     runs-on: ubuntu-latest
 
